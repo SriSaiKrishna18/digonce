@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
+
 export default async function CheckinPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = createServerClient();
@@ -19,9 +20,12 @@ export default async function CheckinPage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div className="max-w-lg mx-auto py-8 px-4">
-      <Link href={`/works/${id}`} className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block">
-        ← Back to {work.title}
+    <div className="max-w-md mx-auto py-10 px-5">
+      <Link
+        href={`/works/${id}`}
+        className="nav-link text-[13px] mb-6 inline-block"
+      >
+        ← Back to work details
       </Link>
       <CheckinForm workId={work.id} workTitle={work.title} />
     </div>

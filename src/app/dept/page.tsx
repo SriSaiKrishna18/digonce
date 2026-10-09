@@ -6,11 +6,6 @@ export const dynamic = 'force-dynamic';
 export default async function DeptPage() {
   const supabase = createServerClient();
 
-  // For now, we render the login flow (client-side handles auth)
-  // In a full implementation, we'd check auth server-side
-  // But for the hackathon, the demo login flow is client-side
-
-  // Fetch department's works (will be empty if not logged in, which is fine)
   const { data: works } = await supabase
     .from('works')
     .select(`
@@ -30,31 +25,31 @@ export default async function DeptPage() {
     <DeptClient isLoggedIn={false} departmentName={undefined}>
       <div className="space-y-4">
         {works && works.length > 0 ? (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dates</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-[13px]" style={{ color: 'var(--color-text-primary)' }}>
+              <thead>
+                <tr className="border-b" style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-tertiary)' }}>
+                  <th className="py-3 font-medium uppercase tracking-wide text-[11px]">Title</th>
+                  <th className="py-3 font-medium uppercase tracking-wide text-[11px]">Type</th>
+                  <th className="py-3 font-medium uppercase tracking-wide text-[11px]">Status</th>
+                  <th className="py-3 font-medium uppercase tracking-wide text-[11px]">Dates</th>
+                  <th className="py-3 font-medium uppercase tracking-wide text-[11px]">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody>
                 {works.map((work: Record<string, unknown>) => (
-                  <tr key={work.id as string} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium">{work.title as string}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 capitalize">{work.type as string}</td>
-                    <td className="px-4 py-3">
+                  <tr key={work.id as string} className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
+                    <td className="py-3 font-medium">{work.title as string}</td>
+                    <td className="py-3 capitalize" style={{ color: 'var(--color-text-secondary)' }}>{work.type as string}</td>
+                    <td className="py-3">
                       <StatusBadge status={work.status as string} />
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {work.start_date as string} → {work.end_date as string}
+                    <td className="py-3 font-mono" style={{ color: 'var(--color-text-secondary)' }}>
+                      {work.start_date as string} &rarr; {work.end_date as string}
                     </td>
-                    <td className="px-4 py-3 text-sm">
-                      <a href={`/works/${work.id}`} className="text-orange-600 hover:text-orange-700">
-                        View →
+                    <td className="py-3">
+                      <a href={`/works/${work.id}`} className="hover:underline" style={{ color: 'var(--color-brand-600)' }}>
+                        View &rarr;
                       </a>
                     </td>
                   </tr>
@@ -63,9 +58,8 @@ export default async function DeptPage() {
             </table>
           </div>
         ) : (
-          <div className="text-center py-12 text-gray-500">
-            <div className="text-4xl mb-3">📋</div>
-            <p>No works found. Create a new work project to get started.</p>
+          <div className="py-12" style={{ color: 'var(--color-text-secondary)' }}>
+            <p className="text-[13px]">No works found. Create a new work project to get started.</p>
           </div>
         )}
       </div>
@@ -74,16 +68,17 @@ export default async function DeptPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    planned: 'bg-blue-100 text-blue-700',
-    active: 'bg-amber-100 text-amber-700',
-    completed: 'bg-green-100 text-green-700',
-    delayed: 'bg-red-100 text-red-700',
-    cancelled: 'bg-gray-100 text-gray-500',
+  const statusColors: Record<string, string> = {
+    planned: 'var(--color-text-secondary)',
+    active: 'var(--color-brand-600)',
+    completed: 'var(--color-success)',
+    delayed: 'var(--color-danger)',
+    cancelled: 'var(--color-text-tertiary)',
   };
 
   return (
-    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full capitalize ${styles[status] || styles.planned}`}>
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full border uppercase tracking-wider" style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-primary)' }}>
+      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColors[status] || 'var(--color-text-tertiary)' }}></span>
       {status}
     </span>
   );
