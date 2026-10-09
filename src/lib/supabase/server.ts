@@ -1,0 +1,23 @@
+// DigOnce — Supabase Server Client
+import { createClient } from '@supabase/supabase-js';
+
+// Server-side client with anon key (for public reads, RLS-protected writes)
+export function createServerClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  return createClient(supabaseUrl, supabaseAnonKey);
+}
+
+// Server-side admin client with service role key (for seed/reset operations)
+export function createAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
