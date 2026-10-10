@@ -42,7 +42,7 @@ export default function HomeClient({ segments, works }: { segments: any; works: 
   return (
     <div className="flex flex-col lg:flex-row" style={{ height: 'calc(100vh - 5.5rem)' }}>
       {/* Map — dominant visual */}
-      <div className="flex-1 min-h-[50vh] lg:min-h-0 relative">
+      <div className="flex-1 relative w-full" style={{ minHeight: '500px' }}>
         <MapView
           segments={segments}
           works={filteredWorks}

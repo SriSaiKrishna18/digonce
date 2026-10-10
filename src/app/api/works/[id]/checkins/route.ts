@@ -22,6 +22,7 @@ export async function POST(
 
     const { lat, lng, mode, note } = parsed.data;
     const supabase = await createServerClient();
+    const adminClient = (await import('@/lib/supabase/server')).createAdminClient();
 
     // Get auth user
     const authHeader = request.headers.get('authorization');
@@ -68,7 +69,7 @@ export async function POST(
     const result = minDistanceToSegments(lat, lng, geometries);
 
     // Insert check-in
-    const { data: checkin, error: insertError } = await supabase
+    const { data: checkin, error: insertError } = await adminClient
       .from('checkins')
       .insert({
         work_id: workId,
@@ -88,7 +89,7 @@ export async function POST(
     }
 
     // Count valid check-ins for verification badge
-    const { count } = await supabase
+    const { count } = await adminClient
       .from('checkins')
       .select('user_id', { count: 'exact' })
       .eq('work_id', workId)
