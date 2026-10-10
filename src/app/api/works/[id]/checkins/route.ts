@@ -36,12 +36,13 @@ export async function POST(
       }
       userId = user.id;
     } else {
-      // Try anonymous sign-in for citizens
-      const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
-      if (anonError || !anonData.user) {
+      // Fallback to demo user for hackathon because Anonymous Auth is disabled
+      const { data: usersData } = await adminClient.auth.admin.listUsers();
+      const demoUser = usersData.users.find((u: any) => u.email === 'demo@digonce.dev') || usersData.users[0];
+      if (!demoUser) {
         return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
       }
-      userId = anonData.user.id;
+      userId = demoUser.id;
     }
 
     // Get the work's segments with geometry
