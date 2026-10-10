@@ -54,7 +54,7 @@ export default function MapView({
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: 'https://tiles.openfreemap.org/styles/liberty',
+      style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
       center,
       zoom,
       attributionControl: {},
