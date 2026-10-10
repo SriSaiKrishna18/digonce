@@ -54,6 +54,9 @@ export default function RootLayout({
                 <a href="/" className="nav-link px-3 py-1.5 text-[13px] font-medium rounded-md">
                   Map
                 </a>
+                <a href="/about" className="nav-link px-3 py-1.5 text-[13px] font-medium rounded-md">
+                  About
+                </a>
                 <a href="/benchmark" className="nav-link px-3 py-1.5 text-[13px] font-medium rounded-md">
                   Benchmark
                 </a>
