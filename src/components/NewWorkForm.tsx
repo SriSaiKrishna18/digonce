@@ -39,8 +39,8 @@ const labelStyle = {
 
 export default function NewWorkForm({ segments, departmentId, departmentName, authToken }: NewWorkFormProps) {
   const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [purpose, setPurpose] = useState('');
+  const [title, setTitle] = useState('Emergency Repair Work');
+  const [purpose, setPurpose] = useState('Standard infrastructure maintenance request.');
   const [type, setType] = useState('excavation');
   const [contractorName, setContractorName] = useState('');
   const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
