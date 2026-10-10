@@ -1,23 +1,29 @@
 import { createServerClient } from '@/lib/supabase/server';
 import NewWorkForm from '@/components/NewWorkForm';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function NewWorkPage() {
   const supabase = createServerClient();
 
-  // Fetch all segments for the segment picker
+  // Check auth
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect('/dept');
+  }
+
+  // Fetch segments for picker
   const { data: segments } = await supabase
     .from('segments')
     .select('id, name, ward')
     .order('name');
 
-  // For the demo, we use a hardcoded department ID
-  // In production, this would come from the authenticated user's profile
+  // Fetch all departments
   const { data: departments } = await supabase
     .from('departments')
     .select('id, name')
-    .limit(1);
+    .order('name');
 
   const dept = departments?.[0];
 
@@ -25,8 +31,8 @@ export default async function NewWorkPage() {
     <NewWorkForm
       segments={segments || []}
       departmentId={dept?.id || ''}
-      departmentName={dept?.name || 'Demo Department'}
-      authToken="" // Will be set client-side after demo login
+      departmentName={dept?.name || 'Department'}
+      authToken=""
     />
   );
 }

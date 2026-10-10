@@ -9,7 +9,7 @@ interface MapProps {
   works?: WorkWithSegments[];
   onSegmentClick?: (segmentId: string) => void;
   onWorkClick?: (workId: string) => void;
-  center?: [number, number]; // [lng, lat]
+  center?: [number, number];
   zoom?: number;
   interactive?: boolean;
   onMapClick?: (lngLat: { lng: number; lat: number }) => void;
@@ -27,12 +27,12 @@ interface WorkWithSegments {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  planned: '#3B82F6',    // blue
-  active: '#F59E0B',     // amber
-  completed: '#10B981',  // green
-  delayed: '#EF4444',    // red
-  cancelled: '#6B7280',  // gray
-  none: '#9CA3AF',       // light gray (no work)
+  planned: '#3B82F6',
+  active: '#F59E0B',
+  completed: '#10B981',
+  delayed: '#EF4444',
+  cancelled: '#6B7280',
+  none: '#94a3b8',
 };
 
 export default function MapView({
@@ -40,8 +40,8 @@ export default function MapView({
   works = [],
   onSegmentClick,
   onWorkClick,
-  center = [79.7036, 12.8342], // Kancheepuram default
-  zoom = 14,
+  center = [79.7036, 12.8342],
+  zoom = 15,
   interactive = true,
   onMapClick,
 }: MapProps) {
@@ -78,44 +78,42 @@ export default function MapView({
     };
   }, []);
 
-  // Add segments and work coloring when data loads
   useEffect(() => {
     if (!map.current || !mapLoaded || !segments) return;
+    if (!segments.features || segments.features.length === 0) return;
 
-    // Build a map of segment ID → work status (use highest priority status)
+    // Build segment -> work status mapping
     const segmentStatusMap = new Map<string, string>();
-    const segmentWorkMap = new Map<string, string>();
+    const segmentWorkMap = new Map<string, { id: string; title: string }>();
 
     const statusPriority: Record<string, number> = {
-      delayed: 4,
-      active: 3,
-      planned: 2,
-      completed: 1,
-      cancelled: 0,
+      delayed: 4, active: 3, planned: 2, completed: 1, cancelled: 0,
     };
 
     for (const work of works) {
+      if (!work.segment_ids) continue;
       for (const segId of work.segment_ids) {
         const current = segmentStatusMap.get(segId);
         if (!current || statusPriority[work.status] > (statusPriority[current] || 0)) {
           segmentStatusMap.set(segId, work.status);
-          segmentWorkMap.set(segId, work.id);
+          segmentWorkMap.set(segId, { id: work.id, title: work.title });
         }
       }
     }
 
-    // Color each segment feature
+    // Color each segment
     const coloredFeatures = segments.features.map(feature => {
       const segId = feature.properties?.id || feature.id;
       const status = segmentStatusMap.get(segId as string) || 'none';
-      const workId = segmentWorkMap.get(segId as string) || null;
+      const workInfo = segmentWorkMap.get(segId as string);
       return {
         ...feature,
         properties: {
           ...feature.properties,
           status,
           color: STATUS_COLORS[status] || STATUS_COLORS.none,
-          workId,
+          workId: workInfo?.id || null,
+          workTitle: workInfo?.title || null,
         },
       };
     });
@@ -125,49 +123,38 @@ export default function MapView({
       features: coloredFeatures,
     };
 
-    // Remove existing layer/source if present
-    if (map.current.getLayer('segments-layer')) {
-      map.current.removeLayer('segments-layer');
-    }
-    if (map.current.getLayer('segments-highlight')) {
-      map.current.removeLayer('segments-highlight');
-    }
-    if (map.current.getSource('segments')) {
-      map.current.removeSource('segments');
-    }
+    // Remove existing layers
+    if (map.current.getLayer('segments-highlight')) map.current.removeLayer('segments-highlight');
+    if (map.current.getLayer('segments-layer')) map.current.removeLayer('segments-layer');
+    if (map.current.getSource('segments')) map.current.removeSource('segments');
 
     map.current.addSource('segments', {
       type: 'geojson',
       data: coloredCollection,
     });
 
+    // Base segment lines — thicker, more visible
     map.current.addLayer({
       id: 'segments-layer',
       type: 'line',
       source: 'segments',
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
         'line-color': ['get', 'color'],
-        'line-width': 4,
-        'line-opacity': 0.8,
+        'line-width': 5,
+        'line-opacity': 0.85,
       },
     });
 
-    // Highlight on hover
+    // Hover highlight layer
     map.current.addLayer({
       id: 'segments-highlight',
       type: 'line',
       source: 'segments',
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
         'line-color': ['get', 'color'],
-        'line-width': 8,
+        'line-width': 10,
         'line-opacity': 0,
       },
     });
@@ -176,17 +163,14 @@ export default function MapView({
     map.current.on('click', 'segments-layer', (e) => {
       if (e.features && e.features.length > 0) {
         const feature = e.features[0];
-        const segId = feature.properties?.id;
         const workId = feature.properties?.workId;
-        if (workId && onWorkClick) {
-          onWorkClick(workId);
-        } else if (segId && onSegmentClick) {
-          onSegmentClick(segId);
-        }
+        const segId = feature.properties?.id;
+        if (workId && onWorkClick) onWorkClick(workId);
+        else if (segId && onSegmentClick) onSegmentClick(segId);
       }
     });
 
-    // Cursor change on hover
+    // Cursor
     map.current.on('mouseenter', 'segments-layer', () => {
       if (map.current) map.current.getCanvas().style.cursor = 'pointer';
     });
@@ -194,30 +178,54 @@ export default function MapView({
       if (map.current) map.current.getCanvas().style.cursor = '';
     });
 
-    // Popup on hover
-    const popup = new maplibregl.Popup({
-      closeButton: false,
-      closeOnClick: false,
-    });
-
+    // Tooltip popup
+    const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
     map.current.on('mousemove', 'segments-layer', (e) => {
       if (e.features && e.features.length > 0 && map.current) {
-        const feature = e.features[0];
-        const name = feature.properties?.name || 'Unnamed road';
-        const status = feature.properties?.status || 'none';
-        const html = `
-          <div class="text-sm">
-            <strong>${name}</strong><br/>
-            Status: <span style="color:${STATUS_COLORS[status]}">${status === 'none' ? 'No works' : status}</span>
-          </div>
-        `;
+        const f = e.features[0];
+        const name = f.properties?.name || 'Unnamed road';
+        const status = f.properties?.status || 'none';
+        const workTitle = f.properties?.workTitle;
+        const color = STATUS_COLORS[status] || STATUS_COLORS.none;
+        let html = `<div style="font-family:DM Sans,system-ui;font-size:12px;line-height:1.4">
+          <strong>${name}</strong><br/>
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle"></span>
+          <span style="color:${color};font-weight:500">${status === 'none' ? 'No active works' : status}</span>`;
+        if (workTitle) html += `<br/><span style="color:#666;font-size:11px">${workTitle}</span>`;
+        html += `</div>`;
         popup.setLngLat(e.lngLat).setHTML(html).addTo(map.current);
+
+        // Highlight on hover
+        map.current.setPaintProperty('segments-highlight', 'line-opacity', [
+          'case', ['==', ['get', 'id'], f.properties?.id || ''], 0.4, 0
+        ]);
+      }
+    });
+    map.current.on('mouseleave', 'segments-layer', () => {
+      popup.remove();
+      if (map.current) {
+        map.current.setPaintProperty('segments-highlight', 'line-opacity', 0);
       }
     });
 
-    map.current.on('mouseleave', 'segments-layer', () => {
-      popup.remove();
-    });
+    // Auto-fit bounds to segment data
+    const bounds = new maplibregl.LngLatBounds();
+    let hasCoords = false;
+    for (const feat of segments.features) {
+      const coords = feat.geometry && 'coordinates' in feat.geometry ? feat.geometry.coordinates : null;
+      if (coords && Array.isArray(coords)) {
+        for (const c of coords as [number, number][]) {
+          if (Array.isArray(c) && c.length >= 2) {
+            bounds.extend(c as [number, number]);
+            hasCoords = true;
+          }
+        }
+      }
+    }
+    if (hasCoords) {
+      map.current.fitBounds(bounds, { padding: 40, maxZoom: 16, duration: 800 });
+    }
+
   }, [mapLoaded, segments, works]);
 
   return (
@@ -225,18 +233,25 @@ export default function MapView({
       <div ref={mapContainer} className="w-full h-full" />
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur rounded-lg shadow-lg p-3 text-xs">
-        <div className="font-semibold mb-1.5">Road Status</div>
-        {Object.entries(STATUS_COLORS).filter(([k]) => k !== 'none').map(([status, color]) => (
+      <div
+        className="absolute bottom-4 left-4 rounded-md p-3 text-[11px]"
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.95)',
+          border: '1px solid var(--color-border-default)',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+        }}
+      >
+        <div className="font-medium mb-1.5" style={{ color: 'var(--color-text-primary)', fontSize: '12px' }}>
+          Road Status
+        </div>
+        {Object.entries(STATUS_COLORS).map(([status, color]) => (
           <div key={status} className="flex items-center gap-2 py-0.5">
-            <div className="w-4 h-1 rounded-full" style={{ backgroundColor: color }} />
-            <span className="capitalize">{status}</span>
+            <div className="w-4 h-[3px] rounded-full" style={{ backgroundColor: color }} />
+            <span className="capitalize" style={{ color: status === 'none' ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)' }}>
+              {status === 'none' ? 'No works' : status}
+            </span>
           </div>
         ))}
-        <div className="flex items-center gap-2 py-0.5">
-          <div className="w-4 h-1 rounded-full bg-gray-300" />
-          <span>No works</span>
-        </div>
       </div>
     </div>
   );

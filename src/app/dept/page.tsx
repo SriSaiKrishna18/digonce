@@ -3,83 +3,96 @@ import DeptClient from '@/components/DeptClient';
 
 export const dynamic = 'force-dynamic';
 
+const STATUS_CONFIG: Record<string, { label: string; dot: string }> = {
+  planned: { label: 'Planned', dot: '#3b82f6' },
+  active: { label: 'Active', dot: '#d97706' },
+  completed: { label: 'Completed', dot: '#16a34a' },
+  delayed: { label: 'Delayed', dot: '#dc2626' },
+  cancelled: { label: 'Cancelled', dot: '#9ca3af' },
+};
+
 export default async function DeptPage() {
   const supabase = createServerClient();
 
-  const { data: works } = await supabase
-    .from('works')
-    .select(`
-      id,
-      title,
-      type,
-      status,
-      start_date,
-      end_date,
-      original_end_date,
-      departments ( name )
-    `)
-    .order('start_date', { ascending: false })
-    .limit(50);
+  // Check auth
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
+  const userEmail = user?.email || undefined;
 
-  return (
-    <DeptClient isLoggedIn={false} departmentName={undefined}>
-      <div className="space-y-4">
-        {works && works.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-[13px]" style={{ color: 'var(--color-text-primary)' }}>
-              <thead>
-                <tr className="border-b" style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-tertiary)' }}>
-                  <th className="py-3 font-medium uppercase tracking-wide text-[11px]">Title</th>
-                  <th className="py-3 font-medium uppercase tracking-wide text-[11px]">Type</th>
-                  <th className="py-3 font-medium uppercase tracking-wide text-[11px]">Status</th>
-                  <th className="py-3 font-medium uppercase tracking-wide text-[11px]">Dates</th>
-                  <th className="py-3 font-medium uppercase tracking-wide text-[11px]">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {works.map((work: Record<string, unknown>) => (
-                  <tr key={work.id as string} className="border-b" style={{ borderColor: 'var(--color-border-default)' }}>
-                    <td className="py-3 font-medium">{work.title as string}</td>
-                    <td className="py-3 capitalize" style={{ color: 'var(--color-text-secondary)' }}>{work.type as string}</td>
-                    <td className="py-3">
-                      <StatusBadge status={work.status as string} />
-                    </td>
-                    <td className="py-3 font-mono" style={{ color: 'var(--color-text-secondary)' }}>
-                      {work.start_date as string} &rarr; {work.end_date as string}
-                    </td>
-                    <td className="py-3">
-                      <a href={`/works/${work.id}`} className="hover:underline" style={{ color: 'var(--color-brand-600)' }}>
-                        View &rarr;
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="py-12" style={{ color: 'var(--color-text-secondary)' }}>
-            <p className="text-[13px]">No works found. Create a new work project to get started.</p>
-          </div>
-        )}
+  // Fetch works if logged in
+  let works: any[] = [];
+  if (isLoggedIn) {
+    const { data } = await supabase
+      .from('works')
+      .select(`
+        id, title, status, type, start_date, end_date,
+        departments ( name )
+      `)
+      .order('created_at', { ascending: false });
+    works = data || [];
+  }
+
+  const worksList = isLoggedIn ? (
+    works.length === 0 ? (
+      <div className="py-12 text-center" style={{ color: 'var(--color-text-tertiary)' }}>
+        <p className="text-[14px] mb-2" style={{ color: 'var(--color-text-secondary)' }}>No works registered yet</p>
+        <p className="text-[13px]">Click "Register New Work" to get started.</p>
       </div>
-    </DeptClient>
-  );
-}
+    ) : (
+      <div style={{ borderTop: '1px solid var(--color-border-default)' }}>
+        {/* Table header */}
+        <div
+          className="grid grid-cols-12 gap-4 px-4 py-2.5 text-[11px] font-medium"
+          style={{ color: 'var(--color-text-tertiary)', letterSpacing: '0.04em', borderBottom: '1px solid var(--color-border-default)' }}
+        >
+          <div className="col-span-4">TITLE</div>
+          <div className="col-span-2">DEPARTMENT</div>
+          <div className="col-span-2">TYPE</div>
+          <div className="col-span-2">DATES</div>
+          <div className="col-span-2 text-right">STATUS</div>
+        </div>
 
-function StatusBadge({ status }: { status: string }) {
-  const statusColors: Record<string, string> = {
-    planned: 'var(--color-text-secondary)',
-    active: 'var(--color-brand-600)',
-    completed: 'var(--color-success)',
-    delayed: 'var(--color-danger)',
-    cancelled: 'var(--color-text-tertiary)',
-  };
+        {/* Table rows */}
+        {works.map((w: any) => {
+          const cfg = STATUS_CONFIG[w.status] || STATUS_CONFIG.planned;
+          return (
+            <a
+              key={w.id}
+              href={`/works/${w.id}`}
+              className="grid grid-cols-12 gap-4 px-4 py-3 text-[13px] transition-colors hover:bg-[var(--color-surface-secondary)]"
+              style={{ borderBottom: '1px solid var(--color-border-default)' }}
+            >
+              <div className="col-span-4 font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
+                {w.title}
+              </div>
+              <div className="col-span-2 truncate" style={{ color: 'var(--color-text-secondary)' }}>
+                {w.departments?.name || '-'}
+              </div>
+              <div className="col-span-2 capitalize" style={{ color: 'var(--color-text-secondary)' }}>
+                {w.type}
+              </div>
+              <div className="col-span-2 font-mono text-[11px] tabular-nums" style={{ color: 'var(--color-text-tertiary)' }}>
+                {w.start_date}
+              </div>
+              <div className="col-span-2 text-right">
+                <span
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-medium"
+                  style={{ backgroundColor: `${cfg.dot}15`, color: cfg.dot }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cfg.dot }} />
+                  {cfg.label}
+                </span>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    )
+  ) : null;
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full border uppercase tracking-wider" style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-primary)' }}>
-      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColors[status] || 'var(--color-text-tertiary)' }}></span>
-      {status}
-    </span>
+    <DeptClient isLoggedIn={isLoggedIn} userEmail={userEmail}>
+      {worksList}
+    </DeptClient>
   );
 }

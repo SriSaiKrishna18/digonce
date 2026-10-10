@@ -15,14 +15,22 @@ export default function DeptClient({ children, departmentName, isLoggedIn, userE
   const router = useRouter();
   const [signingIn, setSigningIn] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [emailAuthLoading, setEmailAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   async function handleGoogleSignIn() {
     setSigningIn(true);
+    setAuthError(null);
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -34,13 +42,42 @@ export default function DeptClient({ children, departmentName, isLoggedIn, userE
         window.location.href = data.url;
       }
     } catch {
-      alert('Google sign-in failed. Please try again.');
+      setAuthError('Google sign-in failed. Please try again.');
       setSigningIn(false);
+    }
+  }
+
+  async function handleEmailAuth(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailAuthLoading(true);
+    setAuthError(null);
+
+    try {
+      if (authMode === 'signup') {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) throw error;
+        router.refresh();
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        router.refresh();
+      }
+    } catch (err: any) {
+      setAuthError(err.message || 'Authentication failed.');
+    } finally {
+      setEmailAuthLoading(false);
     }
   }
 
   async function handleDemoLogin() {
     setDemoLoading(true);
+    setAuthError(null);
     try {
       const res = await fetch('/api/demo/login', { method: 'POST' });
       const data = await res.json();
@@ -48,10 +85,10 @@ export default function DeptClient({ children, departmentName, isLoggedIn, userE
         localStorage.setItem('supabase-auth-token', JSON.stringify(data.session));
         router.refresh();
       } else {
-        alert('Demo login failed: ' + (data.error || 'Unknown error'));
+        setAuthError('Demo login failed: ' + (data.error || 'Unknown error'));
       }
     } catch {
-      alert('Demo login failed');
+      setAuthError('Demo login failed');
     } finally {
       setDemoLoading(false);
     }
@@ -92,6 +129,71 @@ export default function DeptClient({ children, departmentName, isLoggedIn, userE
             </svg>
             {signingIn ? 'Redirecting…' : 'Sign in with Google'}
           </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 py-1">
+            <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-border-default)' }} />
+            <span className="text-[11px]" style={{ color: 'var(--color-text-tertiary)' }}>or</span>
+            <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-border-default)' }} />
+          </div>
+
+          {/* Email Auth Form */}
+          <form onSubmit={handleEmailAuth} className="space-y-3">
+            <input
+              type="email"
+              required
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 rounded-md text-[14px]"
+              style={{
+                border: '1px solid var(--color-border-default)',
+                backgroundColor: 'var(--color-surface-default)',
+                color: 'var(--color-text-primary)'
+              }}
+            />
+            <input
+              type="password"
+              required
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 rounded-md text-[14px]"
+              style={{
+                border: '1px solid var(--color-border-default)',
+                backgroundColor: 'var(--color-surface-default)',
+                color: 'var(--color-text-primary)'
+              }}
+            />
+            
+            {authError && (
+              <div className="text-[12px] font-medium" style={{ color: 'var(--color-brand-600)' }}>
+                {authError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={emailAuthLoading}
+              className="w-full px-4 py-3 rounded-md text-[14px] font-medium transition-all hover:shadow-sm disabled:opacity-50"
+              style={{
+                backgroundColor: 'var(--color-brand-600)',
+                color: 'white',
+              }}
+            >
+              {emailAuthLoading ? 'Processing...' : authMode === 'signin' ? 'Sign In' : 'Sign Up'}
+            </button>
+            <div className="text-center mt-2">
+              <button
+                type="button"
+                onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
+                className="text-[12px] hover:underline"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                {authMode === 'signin' ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+              </button>
+            </div>
+          </form>
 
           {/* Divider */}
           <div className="flex items-center gap-3 py-1">
