@@ -52,8 +52,5 @@ The conflict detection engine is fully tested with 14/14 unit tests passing, ens
 ## Data Attribution
 Map data provided by OpenStreetMap (ODbL) and OpenFreeMap tiles.
 
-## Team
-Solo build by Sri for Bits and Bytes 2026, IIITDM Kancheepuram.
-
 ## Honest Framing
 This is a 24-hour prototype. The conflict rules are validated against synthetic ground truth, not real municipal data. Real-world deployment would require integration with actual department workflows and legacy systems.
