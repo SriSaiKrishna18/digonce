@@ -4,7 +4,15 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "DigOnce — Public Works Coordination Engine",
   description:
-    "Prevent repeated road excavation. Coordinate across departments. Hold timelines accountable.",
+    "Prevent repeated road excavation. Detect scheduling conflicts across departments. Hold timelines accountable with citizen check-ins.",
+  keywords: ["civic tech", "public works", "road excavation", "coordination", "conflict detection", "municipality"],
+  authors: [{ name: "Sri Sai Krishna" }],
+  openGraph: {
+    title: "DigOnce — Dig the road once. Know why. Hold on-time.",
+    description: "A coordination engine that detects scheduling conflicts before departments break ground. Built for Bits and Bytes 2026, IIITDM Kancheepuram.",
+    type: "website",
+    locale: "en_IN",
+  },
 };
 
 export default function RootLayout({
