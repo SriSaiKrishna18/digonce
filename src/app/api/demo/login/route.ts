@@ -4,7 +4,7 @@ import { createServerClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const email = process.env.DEMO_DEPARTMENT_EMAIL;
     const password = process.env.DEMO_DEPARTMENT_PASSWORD;

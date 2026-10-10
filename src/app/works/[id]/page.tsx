@@ -16,7 +16,7 @@ const STATUS_STYLES: Record<string, { dot: string; label: string }> = {
 
 export default async function WorkDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data: work } = await supabase
     .from('works')

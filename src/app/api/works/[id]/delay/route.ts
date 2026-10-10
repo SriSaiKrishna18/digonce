@@ -20,7 +20,7 @@ export async function POST(
     }
 
     const { newEnd, reason, note } = parsed.data;
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // Get current work
     const { data: work, error: workError } = await supabase

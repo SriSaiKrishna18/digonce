@@ -12,7 +12,7 @@ const STATUS_CONFIG: Record<string, { label: string; dot: string }> = {
 };
 
 export default async function DeptPage() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   // Check auth
   const { data: { user } } = await supabase.auth.getUser();

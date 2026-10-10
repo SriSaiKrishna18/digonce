@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const { title, type, departmentId, segmentIds, startDate, endDate, editingWorkId } = parsed.data;
 
     // Fetch all active works on the candidate's segments
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data: workSegments, error: wsError } = await supabase
       .from('work_segments')
       .select('work_id, segment_id')

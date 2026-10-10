@@ -21,7 +21,7 @@ export async function POST(
     }
 
     const { lat, lng, mode, note } = parsed.data;
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // Get auth user
     const authHeader = request.headers.get('authorization');

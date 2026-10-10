@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       segmentIds, startDate, endDate, overrideReason,
     } = parsed.data;
 
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // Re-run conflict detection server-side (never trust the client)
     const { data: workSegments } = await supabase

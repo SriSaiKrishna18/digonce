@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function CheckinPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data: work } = await supabase
     .from('works')

@@ -4,7 +4,7 @@ import HomeClient from './HomeClient';
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   
   const { data: segmentsData } = await supabase.from('segments').select('id, name, ward, geometry');
   
