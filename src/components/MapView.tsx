@@ -72,7 +72,15 @@ export default function MapView({
       });
     }
 
+    const resizeObserver = new ResizeObserver(() => {
+      if (map.current) {
+        map.current.resize();
+      }
+    });
+    resizeObserver.observe(mapContainer.current);
+
     return () => {
+      resizeObserver.disconnect();
       map.current?.remove();
       map.current = null;
     };
@@ -223,7 +231,11 @@ export default function MapView({
       }
     }
     if (hasCoords) {
-      map.current.fitBounds(bounds, { padding: 40, maxZoom: 16, duration: 800 });
+      try {
+        map.current.fitBounds(bounds, { padding: 40, maxZoom: 16, duration: 800 });
+      } catch (err) {
+        console.warn('Map fitBounds failed (likely due to zero container size):', err);
+      }
     }
 
   }, [mapLoaded, segments, works]);
